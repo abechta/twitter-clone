@@ -1,0 +1,749 @@
+Używając biblioteki ReactJS stwórz aplikację Social App.
+
+UWAGA: Całą aplikację tworzymy z użyciem wyłącznie komponentów funkcyjnych oraz odpowiednich hooków
+
+Widoki aplikacji
+Widok niezalogowanego użytkownika:
+Menu nawigacyjne z odnośnikami do strony głównej (Home), strony logowania (Login), strony rejestracji (Signup)
+Strona główna (Home) z listą postów
+Lista 10 postów pod którą jest przycisk Pobierz więcej (Load more), który po kliknięciu pobiera kolejne 10 postów
+Widok pojedynczego postu wyświetla nazwę użytkownika, datę dodania, treść, awatar i liczbę like’ów
+Strona logowania (Login) zawiera formularz logowania z polami username oraz password
+Jeśli logowanie nie przebiega poprawnie wyświetlamy odpowiednie komunikaty
+Jeśli logowanie się udało, to przekierowujemy na stronę główną
+Strona rejestracji (Signup) z zawiera formularz rejestracji z polami username, email, password oraz confirmPassword
+Pola muszą się walidować wg zasad:
+nazwa użytkownika (username) – nie może być puste, min. 4 znaki, nie może zawierać białych znaków
+adres email (email) – nie może być puste, nie może zawierać białych znaków, musi to być poprawny adres email
+hasło (password) – nie może być puste, min. 6 znaków, musi zawierać co najmniej 1 cyfrę, musi zawierać co najmniej jeden specjalny znak z następujących: ! # @ $ %
+potwierdzenie hasła (confirmPassword) – musi być identyczne jak do pole password
+Jeśli rejestracja przebiegła popranie dezaktywujemy przycisk wysyłania formularza i wyswietlamy przycisk przekierowujący do rejestracji
+Widok zalogowanego użytkownika:
+Menu nawigacyjne z odnośnikiem do strony głównej (Home) oraz odnośnikiem wylogowanie (Logout), którego kliknięciu wylogowuje użytkownika
+Strona główna (Home) z listą postów
+Lista 10 postów pod którą jest przycisk Pobierz więcej (Load more), który po kliknięciu pobiera kolejne 10 postów
+Widok pojedynczego postu wyświetla nazwę użytkownika, datę dodania, treść, awatar i liczbę like’ów, przycisk like/dislike
+Dodatkowo jeśli post jest dodany przez aktualnie zalogowanego użytkownika to jest przycisk Usuń post (Delete post)
+Dodatkowo jeśli post jest nie dodany przez aktualnie zalogowanego użytkownika to jest przycisk Przestań śledzić (Unfollow)
+Nad listą postów jest boks wyświetlający rekomendowanie do śledzenia profile – każdy proponowany profil ma przycisk Sledź (Follow), którego kliknięcie dodaje ten profil do śledzenia
+Nad listą rekomendowanych do śledzenia profili jest formularz dodania posta z polem tekstowym oraz przyciskiem Dodaj (Add) pozwalający dodać posta aktualnie zalogowanemu użytkownikowi
+Wskazówki
+Stylowanie aplikacji dowolne, ale możesz wzorować się na serwisie https://twitter.com/
+Do routingu (adresów podstron) użyj pakietu react-router-dom – https://reactrouter.com/
+Do zapytań AJAX użyj pakietu axios – https://github.com/axios/axios
+Do przechowywania informacji o zalogowanym użytkowniku używaj local storage – https://developer.mozilla.org/pl/docs/Web/API/Window/localStorage
+Do walidacji pól rejestracji użyj wyrażeń regularnych – https://developer.mozilla.org/pl/docs/Web/JavaScript/Reference/Global_Objects/RegExp, https://developer.mozilla.org/pl/docs/Web/JavaScript/Reference/Global_Objects/RegExp/test
+/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]+/.test('string') – wyrażenie regularne – sprawdzanie czy jest znak specjalny
+/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test('string') – wyrażenie regularne – sprawdzanie czy jest to adres email
+/^[^\s]*$/.test('string') – wyrażenie regularne – sprawdzanie czy jest pusty znak w ciągu znaków
+Specyfikacja API
+Aplikacja komunikuje się z serwerem za pomocą API opisanego poniżej. API wysyła i odbiera dane w formacie JSON
+
+Konfiguracja ogólna
+API rozpoznaje zalogowanego użytkownika dzięki tokenowi (JSON Web Token), który jest generowany przy logowaniu. Taki token musi być wysłany w nagłówku zapytania o nazwie Authorization. Taki nagłówek można skonfigurować globalnie umieszczając w pliku App.js następujący kod:
+
+?
+1
+axios.defaults.headers.common["Authorization"] = "Bearer " + (user ? user.jwt_token : "");
+gdzie user to obiekt aktualnie zalogowanego użytkownika.
+
+Jeśli nie będzie obiektu zalogowanego użytkownika, to nagłówek nie zostanie wysłany i takie zapytanie będzie trakowane tak, jakby wykonał je użytkownik niezalogowany.
+
+Przykład kodu zapytania
+?
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+let postData = {
+  username: "hans",
+  password: "password",
+};
+ 
+axios
+  .post("http://<host>:(<port>)/<path>", postData)
+  .then((res) => {
+    console.log("RESPONSE RECEIVED: ", res);
+  })
+  .catch((err) => {
+    console.log("AXIOS ERROR: ", err);
+  });
+Pierwszy parametr metody post to adres url API, drugi parametr (ciało - body), to dane wysyłane do API.
+
+Specyfikacja API
+1. Obsługa użytkowników
+1.1 Rejestracja użytkownika (user/signup)
+URL: https://akademia108.pl/api/social-app/user/signup
+
+Method: POST
+
+Body data (example)
+
+?
+1
+2
+3
+4
+5
+{
+    "username": "hans",
+    "email": "hans@hansbot.pl",
+    "password": "password",
+}
+Opis: dodawanie nowego user’a polega na wysłaniu obiektu z polami: username, email i password (user NIE dodaje się fizycznie do bazy danych, ale API imituje realny proces dodawania użytkownika. Zwraca obiekt z informacją, że rejestracja została zakończona poprawnie lub z błędem)
+
+PRZYKŁAD ReactJS
+
+?
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+let newUser = {
+  username: "hans",
+  email: "hans@hansbot.pl",
+  password: "password",
+};
+ 
+axios
+  .post("http://akademia108.pl/api/social-app/user/signup", newUser)
+  .then((req) => {
+    // your code :)
+ 
+    console.log(req.data);
+  })
+  .catch((error) => {
+    console.error(error);
+  });
+Odpowiedź z API gdy user został dodany
+
+?
+1
+2
+3
+4
+5
+6
+7
+{
+    "signedup": true,
+    "user": {
+        "username":"hans",
+        "email":"hans@hansbot.pl"
+    }
+}
+Odpowiedź z API w przypadku błędów podczas dodawania usera
+
+1.2. Logowanie użytkownika (user/login)
+URL: https://akademia108.pl/api/social-app/user/login
+
+Method: POST
+
+Body data (example)
+
+?
+1
+2
+3
+4
+{
+    "username": "adam",
+    "password": "1234"
+}
+Opis: logowanie user’a polega na wysłaniu obiektu z polami: username, password. Zwraca informację, czy logowanie zakończyło się poprawnie lub z z błędami. Jeśli zakończyło się poprawnie, to zwraca obiekt użytkownika z JSON Web Tokenem (jwt_token). Obiekt użytkownika powinniśmy zapisać w stanie komponentu App.js oraz w localStorage, żeby korzystać z niego przy zapytaniach do API
+
+Odpowiedź z API gdy user został zalogowany
+
+?
+1
+2
+3
+4
+5
+6
+{
+    "username": "adam",
+    "ttl": 600,
+    "jwt_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOlwvXC8xMjcuMC4wLjE6ODAwMFwvdXNlclwvbG9naW4iLCJpYXQiOjE1OTU5MjcwMTksImV4cCI6MTU5NTk2MzAxOSwibmJmIjoxNTk1OTI3MDE5LCJqdGkiOiI1SnBTVWNoU1htQ0lkWnZnIiwic3ViIjoxLCJwcnYiOiI4N2UwYWYxZWY5ZmQxNTgxMmZkZWM5NzE1M2ExNGUwYjA0NzU0NmFhIn0.AZ24dPJrCkjhEkle9U78wS_hM5GdCCbmTFJwc9t5wok",
+    "error": false
+}
+Odpowiedź z API w przypadku błędów podczas logowania usera
+
+?
+1
+2
+3
+{
+    "error": true
+}
+1.3. Wylogowanie użytkownika (user/logout)
+URL: https://akademia108.pl/api/social-app/user/logout
+
+Method: POST
+
+Opis: wylogowanie user’a polega na wysłaniu zapytania z nagłówkiem zawierającym jwt_token. Nie wysyłamy żadnych danych (body).
+
+Odpowiedź z API gdy user został wylogowany
+
+?
+1
+2
+3
+{
+    "message": "Successfully logged out"
+}
+Odpowiedź z API w przypadku błędów podczas wylogowania usera
+
+?
+1
+2
+3
+{
+    "message": "Unauthenticated."
+}
+2. Obsługa postów
+2.1 Dodawanie postów (post/add)
+URL: https://akademia108.pl/api/social-app/post/add
+
+Method: POST
+
+Body data (example)
+
+?
+1
+2
+3
+{ 
+  "content": "Lorem ipsum..."
+}
+Opis: Dodaje post o danej treści
+
+Odpowiedź z API gdy post dodano
+
+?
+1
+2
+3
+{ 
+  "message": "Post added"
+}
+Odpowiedź z API w przypadku braku dostępu
+
+?
+1
+2
+3
+{
+  "message": "Unauthenticated."
+}
+2.2 Ostatnie posty (post/latest)
+URL: https://akademia108.pl/api/social-app/post/latest
+
+Method: POST
+
+Opis: Użytkownik zalogowany: Pobiera 10 ostatnich postów użytkownika i użytkowników których śledzi. Użytkownik niezalogowany: Pobiera 10 ostatnich postów postów.
+
+Odpowiedź z API pobrano posty
+
+?
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+[  
+  { 
+    "id": 172, 
+    "user_id": 4, 
+    "content": "Dolorem et laborum aperiam non aut quis quia. Recusandae neque quia ducimus nostrum cupiditate iure nesciunt. Magni et et debitis laboriosam id. Ea laborum quas magnam voluptatem animi et reprehenderit. Ducimus vitae sint totam est. Inventore et id impedit modi. Et impedit nobis perferendis ab. Totam aspernatur sint sapiente.", 
+    "created_at": "2020-07-14T07:13:22.000000Z", 
+    "updated_at": null
+    }, 
+    { 
+      "id": 141, 
+      "user_id": 3, 
+      "content": "Nesciunt necessitatibus illum totam dicta non. Aut consectetur nostrum ipsam non. Reprehenderit dolores velit odit sed dolores nihil ullam. Eaque ab fugiat deserunt optio excepturi qui. Eos totam voluptatem dolorum aut non cupiditate enim. Asperiores eaque culpa ipsa voluptates qui. Ea ab illum corrupti illum quo. Reprehenderit at sequi velit aliquid nobis.", 
+      "created_at": "2020-07-13T06:25:04.000000Z", 
+      "updated_at": null
+      }, 
+      ..... 
+]
+2.3 Ostatnie posty po dacie (post/older-then)
+URL: https://akademia108.pl/api/social-app/post/older-then
+
+Method: POST
+
+Body data (example)
+
+?
+1
+2
+3
+{ 
+  "date": "2020-05-05T07:02:14.000000Z"
+}
+Opis: Użytkownik zalogowany: Pobiera 10 ostatnich postów użytkownika i użytkowników których śledzi
+od podanej daty. Użytkownik niezalogowany: Pobiera 10 ostatnich postów postów od podanej daty.
+
+Odpowiedź z API pobrano posty
+
+?
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+[
+    { 
+        "id": 166, 
+        "user_id": "1", 
+        "content": "Et nam omnis quia nihil veniam. Tempore quia odit id doloribus qui eos aut iste. Dolor aliquam et mollitia totam facere dolores animi ut. Dicta omnis et tempora atque sunt molestiae. Amet eligendi tempore autem ea. Sed unde vero maxime aliquam molestiae. Sunt autem aut vitae soluta provident quibusdam et rerum. Adipisci quos saepe non delectus eligendi odit omnis.", 
+        "created_at": "2020-05-28T01:39:46.000000Z", 
+        "updated_at": null
+    }, 
+    { 
+        "id": 68, 
+        "user_id": "1", 
+        "content": "Earum eos quod itaque doloribus culpa quia sunt. Corporis dolorum ut recusandae facilis vitae. Nihil laboriosam in assumenda officiis. Non eum qui ipsa amet saepe. Dicta minima asperiores dolores distinctio dolor quaerat.", 
+        "created_at": "2020-05-25T03:11:47.000000Z", 
+        "updated_at": null
+    }, 
+    ..... 
+]
+2.4 Nowsze posty po dacie (post/newer-then)
+URL: https://akademia108.pl/api/social-app/post/newer-then
+
+Method: POST
+
+Body data (example)
+
+?
+1
+2
+3
+{ 
+  "date": "2020-03-05T07:02:14.000000Z"
+}
+Opis: Użytkownik zalogowany: Pobiera postów użytkownika i użytkowników których śledzi nowsze niż
+podana data. Użytkownik niezalogowany: Pobiera posty nowsze niż podana data daty.
+
+Odpowiedź z API pobrano posty
+
+?
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+[ 
+  { 
+    "id": 166, "user_id": "1",
+    "content": "Et nam omnis quia nihil veniam. Tempore quia odit id doloribus qui eos aut iste. Dolor aliquam et mollitia totam facere dolores animi ut. Dicta omnis et tempora atque sunt molestiae. Amet eligendi tempore autem ea. Sed unde vero maxime aliquam molestiae. Sunt autem aut vitae soluta provident quibusdam et rerum. Adipisci quos saepe non delectus eligendi odit omnis.", 
+    "created_at": "2020-05-28T01:39:46.000000Z", 
+    "updated_at": null
+  }, 
+  { 
+    "id": 68, 
+    "user_id": "1", 
+    "content": "Earum eos quod itaque doloribus culpa quia sunt. Corporis dolorum ut recusandae facilis vitae. Nihil laboriosam in assumenda officiis. Non eum qui ipsa amet saepe. Dicta minima asperiores dolores distinctio dolor quaerat.", 
+    "created_at": "2020-05-25T03:11:47.000000Z", 
+    "updated_at": null
+  }, 
+  ..... 
+]
+2.5 Dodawanie lików do postów (post/like)
+URL: https://akademia108.pl/api/social-app/post/like
+
+Method: POST
+
+Body data (example)
+
+?
+1
+{ "post_id": 40 }
+Opis: Dodaje like do posta.
+
+Odpowiedź z API gdy like dodano
+
+?
+1
+2
+3
+4
+{ 
+  "liked": true, 
+  "message": "Like has been added"
+}
+Odpowiedź z API w przypadku braku dostępu
+
+?
+1
+2
+3
+{ 
+  "message": "Unauthenticated."
+}
+2.6 Usuwanie lików do postów (post/dislike)
+URL: https://akademia108.pl/api/social-app/post/dislike
+
+Method: POST
+
+Body data (example)
+
+?
+1
+2
+3
+{ 
+  "post_id": 40 
+}
+Opis: Usuwa like z posta.
+
+Odpowiedź z API gdy like usunięto
+
+?
+1
+2
+3
+4
+{ 
+  "liked": false, 
+  "message": "Like has been removed"
+}
+Odpowiedź z API w przypadku braku dostępu
+
+?
+1
+2
+3
+{ 
+  "message": "Unauthenticated."
+}
+2.7 Usuwanie postów (post/delete)
+URL: https://akademia108.pl/api/social-app/post/delete
+
+Method: POST
+
+Body data (example)
+
+?
+1
+2
+3
+{ 
+  "post_id": 504 
+}
+Opis: Usuwa posta.
+
+Odpowiedź z API gdy post usunięto
+
+?
+1
+2
+3
+4
+{ 
+  "post_id": 504, 
+  "message": "Post deleted Successfully"
+}
+Odpowiedź z API użytkownik nie ma uprawnień do usunięcia posta
+
+?
+1
+2
+3
+4
+{ 
+  "post_id": 497, 
+  "errors": "Invalid Operation. You have not sufficient permissions"
+}
+Odpowiedź z API w przypadku braku dostępu
+
+?
+1
+2
+3
+{ 
+  "message": "Unauthenticated."
+}
+3. API – Śledzenie użytkowników
+3.1 Rekomendacje do śledzenia (follows/recommendations)
+URL: https://akademia108.pl/api/social-app/follows/recommendations
+
+Method: POST
+
+Opis: Zwraca listę trzech losowych userów, którzy nie są jeszcze śledzeni
+
+Odpowiedź z API gdy zapytanie jest prawidłowe
+
+?
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+[ 
+  { 
+    "id": 2, 
+    "username": "tomek", 
+    "email": "tomek@gmail.com", 
+    "avatar_url": "https://akademia108.pl/api/social-app/img/avatar2.png", 
+    "created_at": null, "updated_at": null
+    }, 
+    { 
+      "id": 4, 
+      "username": "piotrek", 
+      "email": "piotrek@gmail.com", 
+      "avatar_url": "https://akademia108.pl/api/social-app/img/avatar3.png", 
+      "created_at": null, 
+      "updated_at": null
+      }, 
+      { 
+        "id": 3, 
+        "username": "marek", 
+        "email": "marek@gmail.com", 
+        "avatar_url": "https://akademia108.pl/api/social-app/img/avatar1.png", 
+        "created_at": null, 
+        "updated_at": null
+        } 
+  ]
+Odpowiedź z API w przypadku braku dostępu
+
+?
+1
+2
+3
+{ 
+  "message": "Unauthenticated."
+}
+3.2 Dodaj do śledzenia (follows/follow)
+URL: https://akademia108.pl/api/social-app/follows/follow
+
+Method: POST
+
+Body data (example)
+
+?
+1
+2
+3
+{ 
+  "leader_id": 4 
+}
+Opis: Dodaje usera o danym id leader_id do śledzenia
+
+Odpowiedź z API gdy dodano do śledzenia
+
+?
+1
+2
+3
+4
+5
+{ 
+  "leader_id": 4, 
+  "followed": true, 
+  "message": "Follow has been added"
+}
+Odpowiedź z API w przypadku braku dostępu
+
+?
+1
+2
+3
+{ 
+  "message": "Unauthenticated."
+}
+3.3 Usuń ze śledzenia(follows/disfollow)
+URL: https://akademia108.pl/api/social-app/follows/disfollow
+
+Method: POST
+
+Body data (example)
+
+?
+1
+2
+3
+{ 
+  "leader_id": 4 
+}
+Opis: Usuwa usera o danym id leader_id ze śledzenia
+
+Odpowiedź z API gdy usunięto ze śledzenia
+
+?
+1
+2
+3
+4
+5
+{ 
+  "leader_id": 2, 
+  "followed": false, 
+  "message": "Follow has been removed"
+}
+Odpowiedź z API w przypadku braku dostępu
+
+?
+1
+2
+3
+{ 
+  "message": "Unauthenticated."
+}
+3.4 Wszyscy śledzeni(follows/allfollows)
+URL: https://akademia108.pl/api/social-app/follows/allfollows
+
+Method: POST
+
+Opis: Zwraca tablicę wszystkich śledzonych userów
+
+Odpowiedź z API gdy zapytanie jest poprawne
+
+?
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+[ 
+  { 
+    "id": 5, 
+    "username": "hans", 
+    "email": "hans@hansbot.pl", 
+    "avatar_url": "https://akademia108.pl/api/social-app/img/avatar1.png", 
+    "created_at": null, 
+    "updated_at": null, 
+    "pivot": { 
+      "follower_id": 1, 
+      "leader_id": 5, 
+      "created_at": "2020-07-29T08:59:26.000000Z", 
+      "updated_at": "2020-07-29T08:59:26.000000Z"
+    } 
+  }, 
+  { 
+    "id": 6, 
+    "username": "janek", 
+    "email": "janek@gmail.com", 
+    "avatar_url": "https://akademia108.pl/api/social-app/img/avatar2.png", 
+    "created_at": null, 
+    "updated_at": null, 
+    "pivot": { 
+      "follower_id": 1, 
+      "leader_id": 6, 
+      "created_at": "2020-07-29T08:59:29.000000Z", 
+      "updated_at": "2020-07-29T08:59:29.000000Z"
+    } 
+  } 
+]
+Odpowiedź z API w przypadku braku dostępu
+
+?
+1
+2
+3
+{ 
+  "message": "Unauthenticated."
+}

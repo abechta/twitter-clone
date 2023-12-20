@@ -1,0 +1,59 @@
+.post {
+  display: flex;
+  border: 1px solid black;
+  margin: 5px 0;
+  border-radius: 5px;
+}
+
+.post > * {
+  padding: 5px;
+}
+
+.post .avatar img {
+  height: 50px;
+  border-radius: 50px;
+}
+
+.post .post-data {
+  width: 100%;
+}
+
+.post .post-data .post-meta {
+  display: flex;
+  padding: 5px;
+  justify-content: space-between;
+}
+
+.post .post-data .post-meta .author {
+  font-weight: 700;
+}
+
+.post .post-data .postContent {
+  text-align: left;
+  padding: 5px;
+}
+
+.post .likes {
+  text-align: right;
+}
+
+.post .likes button {
+  margin: 0 5px;
+}
+
+.delete-confirm {
+  position: fixed;
+  background-color: white;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border: 1px solid black;
+}
+
+.delete-confirm .yes {
+  background-color: green;
+}
+
+.delete-confirm .no {
+  background-color: red;
+}

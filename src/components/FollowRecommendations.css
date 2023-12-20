@@ -1,0 +1,23 @@
+.follow {
+  border: 1px solid black;
+  max-width: 590px;
+  display: flex;
+  margin: auto;
+  padding: 5px;
+  border-radius: 5px;
+}
+
+.follower {
+  width: 33.33%;
+  padding: 15px;
+}
+
+.follower img {
+  height: 50px;
+  width: 50px;
+  border-radius: 50%;
+}
+
+.follower h3 {
+  margin: 5px;
+}

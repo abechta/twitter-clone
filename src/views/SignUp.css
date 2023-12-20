@@ -1,0 +1,23 @@
+.sing-up form {
+  border: 1px solid black;
+  max-width: 600px;
+  margin: auto;
+  padding: 15px;
+}
+
+.sing-up input {
+  display: block;
+  width: 98%;
+  margin-bottom: 5px;
+  padding: 5px;
+}
+
+.sing-up .btn {
+  display: inline-block;
+  margin: 15px 0;
+}
+
+.sing-up .btn:disabled {
+  background-color: gray;
+  cursor: not-allowed;
+}
